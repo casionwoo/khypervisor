@@ -21,6 +21,7 @@ static void context_copy_regs(struct arch_regs *regs_dst,
     regs_dst->cpsr = regs_src->cpsr;
     regs_dst->pc = regs_src->pc;
     regs_dst->lr = regs_src->lr;
+//    printh("arch_regs->sp : %x\n", regs_src->sp);
     for (i = 0; i < ARCH_REGS_NUM_GPR; i++)
         regs_dst->gpr[i] = regs_src->gpr[i];
 }
@@ -56,6 +57,7 @@ static void context_save_banked(struct regs_banked *regs_banked)
     /* USR banked register */
     asm volatile(" mrs     %0, sp_usr\n\t"
                  : "=r"(regs_banked->sp_usr) : : "memory", "cc");
+//    printh("regs_banked->sp_usr : %x\n", regs_banked->sp_usr);
     /* SVC banked register */
     asm volatile(" mrs     %0, spsr_svc\n\t"
                  : "=r"(regs_banked->spsr_svc) : : "memory", "cc");
@@ -202,7 +204,7 @@ static void context_restore_cops(struct regs_cop *regs_cop)
     write_sctlr(regs_cop->sctlr);
 }
 
-#ifndef DEBUG
+//#ifndef DEBUG
 static char *_modename(uint8_t mode)
 {
     char *name = "Unknown";
@@ -237,7 +239,7 @@ static char *_modename(uint8_t mode)
     }
     return name;
 }
-#endif
+//#endif
 
 static hvmm_status_t guest_hw_save(struct guest_struct *guest,
                 struct arch_regs *current_regs)
@@ -340,12 +342,13 @@ static hvmm_status_t guest_hw_dump(uint8_t verbose, struct arch_regs *regs)
     if (verbose & GUEST_VERBOSE_LEVEL_1) {
         uint32_t lr = 0;
         asm volatile("mov  %0, lr" : "=r"(lr) : : "memory", "cc");
+        
         printH("context: restoring vmid[%d] mode(%x):%s pc:0x%x lr:0x%x\n",
                 _current_guest[0]->vmid,
                 _current_guest[0]->regs.cpsr & 0x1F,
                 _modename(_current_guest[0]->regs.cpsr & 0x1F),
                 _current_guest[0]->regs.pc, lr);
-
+        
     }
     if (verbose & GUEST_VERBOSE_LEVEL_2) {
         uint64_t pct = read_cntpct();

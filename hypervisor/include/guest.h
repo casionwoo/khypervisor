@@ -7,6 +7,7 @@
 #include <hvmm_types.h>
 #include <vgic.h>
 #include <guest_hw.h>
+#include <vmcb.h>
 
 enum hyp_hvc_result {
     HYP_RESULT_ERET = 0,

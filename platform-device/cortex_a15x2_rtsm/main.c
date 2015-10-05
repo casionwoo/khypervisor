@@ -7,6 +7,8 @@
 #include <gic_regs.h>
 #include <test/tests.h>
 #include <smp.h>
+#include <vmcb.h>
+
 
 #define DEBUG
 #include "hvmm_trace.h"
@@ -275,24 +277,35 @@ uint8_t secondary_smp_pen;
 
 int main_cpu_init()
 {
+    //variable for vmcb & vcpu
+    vmcb_t vm0, vm1;
+
     init_print();
     printH("[%s : %d] Starting...Main CPU\n", __func__, __LINE__);
 
     /* Initialize Memory Management */
     setup_memory();
 
-    if (memory_init(guest0_mdlist, guest1_mdlist))
+    //vmcb test
+    vm0.guest_memmap = guest0_mdlist;
+    vm1.guest_memmap = guest1_mdlist;
+
+    if (memory_init(&vm0, &vm1))
         printh("[start_guest] virtual memory initialization failed...\n");
     /* Initialize PIRQ to VIRQ mapping */
+
     setup_interrupt();
+    
+    vm0._guest_virqmap = _guest_virqmap[0];
+    vm0._guest_virqmap.vmid = 0;
+    vm1._guest_virqmap = _guest_virqmap[1];
+    vm1._guest_virqmap.vmid = 1;
+
+
     /* Initialize Interrupt Management */
     if (interrupt_init(_guest_virqmap))
         printh("[start_guest] interrupt initialization failed...\n");
 
-#ifdef _SMP_
-    printH("wake up...other CPUs\n");
-    secondary_smp_pen = 1;
-#endif
 
     /* Initialize Timer */
     setup_timer();
@@ -300,6 +313,7 @@ int main_cpu_init()
         printh("[start_guest] timer initialization failed...\n");
 
     /* Initialize Guests */
+    //Just Initialize everythings in vm struct which mean vcpu in my test.
     if (guest_init())
         printh("[start_guest] guest initialization failed...\n");
 
@@ -322,56 +336,25 @@ int main_cpu_init()
     hyp_abort_infinite();
 }
 
-#ifdef _SMP_
-
-void secondary_cpu_init(uint32_t cpu)
-{
-    if (cpu >= CFG_NUMBER_OF_CPUS)
-        hyp_abort_infinite();
-
-    init_print();
-    printH("[%s : %d] Starting...CPU : #%d\n", __func__, __LINE__, cpu);
-
-    /* Initialize Memory Management */
-    if (memory_init(guest2_mdlist, guest3_mdlist))
-        printh("[start_guest] virtual memory initialization failed...\n");
-
-    /* Initialize Interrupt Management */
-    if (interrupt_init(_guest_virqmap))
-        printh("[start_guest] interrupt initialization failed...\n");
-
-    /* Initialize Timer */
-    if (timer_init(_timer_irq))
-        printh("[start_guest] timer initialization failed...\n");
-
-    /* Initialize Guests */
-    if (guest_init())
-        printh("[start_guest] guest initialization failed...\n");
-
-    /* Initialize Virtual Devices */
-    if (vdev_init())
-        printh("[start_guest] virtual device initialization failed...\n");
-
-    /* Switch to the first guest */
-    guest_sched_start();
-
-    /* The code flow must not reach here */
-    printh("[hyp_main] ERROR: CODE MUST NOT REACH HERE\n");
-    hyp_abort_infinite();
-}
-
-#endif
-
 int main(void)
 {
-#ifdef _SMP_
-    uint32_t cpu = smp_processor_id();
+    uint32_t vmcbs = 2;
+    main_cpu_init();
 
-    if (cpu)
-        secondary_cpu_init(cpu);
-    else
-#endif
-        main_cpu_init();
+    /**************************************
+    *
+    *   Modified Booting Sequence : Hypervisor Init 
+    *                                 -> VMCB Init 
+    *                                 -> Call Scheduler
+    *
+    **************************************/
 
+/*
+    hyper_init();
+    for(i = 0 ; i < vmcbs ; i++)
+        vmcb_init();
+
+    hyper_sched_start();
+*/
     return 0;
 }

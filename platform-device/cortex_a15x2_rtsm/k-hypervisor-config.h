@@ -4,12 +4,19 @@
 /*
  *  BOARD param
  */
+
+#include "config_from_dtb.h"
+
+#define FIRST_GUEST         0
+#define SECOND_GUEST        1
+
+
 #define CFG_BOARD_RTSM_VE_CA15
 #define CFG_GENERIC_CA15
 #define CFG_CNTFRQ          100000000
-#define CFG_UART2         0x1C0B0000
-#define CFG_UART1         0x1C0A0000
-#define CFG_UART0         0x1C090000
+#define CFG_UART2         UART2
+#define CFG_UART1         UART1
+#define CFG_UART0         UART0
 
 #define CFG_NUMBER_OF_CPUS  2
 

@@ -405,6 +405,8 @@ int main(void)
 #ifdef _SMP_
     uint32_t cpu = smp_processor_id();
 
+    printf("cpu : %d\n", cpu);
+
     if (!cpu)
         main_cpu_init();
     else

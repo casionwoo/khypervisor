@@ -7,6 +7,7 @@
 #include <log/print.h>
 #include <hvmm_trace.h>
 #include <smp.h>
+//#include <vmcb.h>
 
 #define NUM_GUEST_CONTEXTS        NUM_GUESTS_CPU0_STATIC
 
@@ -19,6 +20,15 @@ static int _next_guest_vmid[NUM_CPUS] = {VMID_INVALID, };
 struct guest_struct *_current_guest[NUM_CPUS];
 /* further switch request will be ignored if set */
 static uint8_t _switch_locked[NUM_CPUS];
+
+//=========start : vmbc & vcpu test variables for scheduling==================
+static vmcb_t vms[NUM_GUESTS_STATIC];
+static struct vcpu vcpus[NUM_GUESTS_STATIC];
+static int _current_vcpu_vmid[NUM_CPUS] = {VMID_INVALID, VMID_INVALID};
+static int _next_vcpu_vmid[NUM_CPUS] = {VMID_INVALID, };
+struct vcpu * _current_vcpu[NUM_CPUS];
+static uint8_t _switch_locked[NUM_CPUS];
+//=========end : vmbc & vcpu test variables for scheduling==================
 
 static hvmm_status_t guest_save(struct guest_struct *guest,
                         struct arch_regs *regs)
@@ -150,7 +160,7 @@ vmid_t guest_last_vmid(void)
     else
         return 1;
 #endif
-    return cpu;
+    return NUM_GUESTS_STATIC - 1;
 }
 
 vmid_t guest_next_vmid(vmid_t ofvmid)
@@ -256,6 +266,8 @@ void guest_schedule(void *pdata)
      */
 
     /* Switch request, actually performed at trap exit */
+    
+    //Actual our Scheduler
     guest_switchto(sched_policy_determ_next(), 0);
 
 }

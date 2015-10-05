@@ -25,12 +25,16 @@ BOOTLOADER	= boot.S
 
 OBJS 		= boot.o	\
 	main.o				\
+	vmcb_config.o		\
 	$(HYPERVISOR_SOURCE_DIR)/memory.o				\
 	$(HYPERVISOR_SOURCE_DIR)/timer.o				\
 	$(HYPERVISOR_SOURCE_DIR)/guest.o				\
 	$(HYPERVISOR_SOURCE_DIR)/vdev.o					\
 	$(HYPERVISOR_SOURCE_DIR)/monitor.o				\
 	$(HYPERVISOR_SOURCE_DIR)/interrupt.o			\
+	$(HYPERVISOR_SOURCE_DIR)/vmcb.o					\
+	$(HYPERVISOR_SOURCE_DIR)/vcpu.o					\
+	$(HYPERVISOR_HW_DIR)/vcpu_regs.o				\
 	$(HYPERVISOR_HW_DIR)/guest_hw.o					\
 	$(HYPERVISOR_HW_DIR)/timer_hw.o					\
 	$(HYPERVISOR_HW_DIR)/interrupt_hw.o				\

@@ -626,6 +626,7 @@ hvmm_status_t vgic_init(void)
 
     _vgic_maintenance_irq_enable(1);
     if (!cpu) {
+        //Why this functions is needed? : vgic_slotpirq_init
         vgic_slotpirq_init();
         _vgic_dump_status();
         _vgic_dump_regs();

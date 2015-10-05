@@ -1,15 +1,17 @@
 #ifndef KHYPERVISOR_CONFIG_H
 #define KHYPERVISOR_CONFIG_H
 
+#include "config_from_dtb.h"
+
 /*
  *  BOARD param
  */
 #define CFG_BOARD_ARNDALE
 #define CFG_EXYNOS5250
 #define CFG_CNTFRQ          24000000
-#define CFG_UART2         0x12C00000
-#define CFG_UART1         0x12C10000
-#define CFG_UART0         0x12C20000
+#define CFG_UART2         UART0
+#define CFG_UART1         UART1
+#define CFG_UART0         UART2
 
 #define CFG_NUMBER_OF_CPUS  2
 

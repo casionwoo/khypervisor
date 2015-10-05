@@ -149,8 +149,10 @@ hyp_vector_dabt:
 hyp_vector_irq:
     @ Push registers
     push    {r0-r12}
-    mrs    r0, spsr_hyp
-    mrs    r1, elr_hyp
+	@mrs    r0, sp_usr
+	@push	{r0}
+    mrs    r0, spsr_hyp @cpsr
+    mrs    r1, elr_hyp	@pc
     push    {r0, r1, lr}
 
     @ service other argument values -> _hyp_vector_irq(sp)
@@ -161,6 +163,7 @@ hyp_vector_irq:
     pop     {r0-r1, lr}
     msr        spsr_hyp, r0
     msr        elr_hyp, r1
+	@pop		{r0}
     pop     {r0-r12}
     eret
 

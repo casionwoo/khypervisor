@@ -8,6 +8,7 @@
 #include <log/uart_print.h>
 #include <guest.h>
 #include <smp.h>
+#include <vmcb.h>
 
 /**
  * \defgroup Memory_Attribute_Indirection_Register
@@ -1196,8 +1197,7 @@ static void host_memory_init(void)
  *
  * @return void
  */
-static void guest_memory_init(struct memmap_desc **guest0_map,
-        struct memmap_desc **guest1_map)
+static void guest_memory_init(vmcb_t *vm0, vmcb_t *vm1)
 {
     /*
      * Initializes Translation Table for Stage2 Translation (IPA -> PA)
@@ -1210,11 +1210,15 @@ static void guest_memory_init(struct memmap_desc **guest0_map,
     if (!cpu) {
         for (i = 0; i < NUM_GUESTS_STATIC; i++)
             _vmid_ttbl[i] = &_ttbl_guest[i][0];
-        guest_memory_init_ttbl(&_ttbl_guest[0][0], guest0_map);
-        guest_memory_init_ttbl(&_ttbl_guest[1][0], guest1_map);
+
+            if(i == 0)      vm0->vttbr = _vmid_ttbl[i];
+            else if(i == 1) vm1->vttbr = _vmid_ttbl[i];
+
+        guest_memory_init_ttbl(&_ttbl_guest[0][0], vm0->guest_memmap);
+        guest_memory_init_ttbl(&_ttbl_guest[1][0], vm1->guest_memmap);
     } else {
-        guest_memory_init_ttbl(&_ttbl_guest[2][0], guest0_map);
-        guest_memory_init_ttbl(&_ttbl_guest[3][0], guest1_map);
+        guest_memory_init_ttbl(&_ttbl_guest[2][0], vm0->guest_memmap);
+        guest_memory_init_ttbl(&_ttbl_guest[3][0], vm1->guest_memmap);
     }
 
     HVMM_TRACE_EXIT();
@@ -1248,13 +1252,12 @@ static void guest_memory_init(struct memmap_desc **guest0_map,
  *
  * @return HVMM_STATUS_SUCCESS, Always success.
  */
-static int memory_hw_init(struct memmap_desc **guest0,
-            struct memmap_desc **guest1)
+static int memory_hw_init(vmcb_t *vm0, vmcb_t *vm1)
 {
     uint32_t cpu = smp_processor_id();
     uart_print("[memory] memory_init: enter\n\r");
 
-    guest_memory_init(guest0, guest1);
+    guest_memory_init(vm0, vm1);
 
     guest_memory_init_mmu();
 

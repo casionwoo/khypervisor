@@ -1,0 +1,4 @@
+#define UART0 0x12C00000
+#define UART1 0x12C10000
+#define UART2 0x12C20000
+#define UART3 0x12C30000

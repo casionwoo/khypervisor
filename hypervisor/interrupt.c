@@ -168,39 +168,39 @@ void interrupt_service_routine(int irq, void *current_regs, void *pdata)
             _host_ops->end(irq);
         } else
 #endif
-        if (interrupt_check_guest_irq(irq) == GUEST_IRQ) {
+            if (interrupt_check_guest_irq(irq) == GUEST_IRQ) {
 
 #ifdef _SMP_
-            /*
-             * workaround for arndale port
-             * We will identify the interrupt number 0, which is
-             * an unknown number.
-             */
-            if (cpu) {
-                if (irq == 0) {
-                    /* ignore injecting the guest */
-                    _guest_ops->end(irq);
-                    return;
+                /*
+                 * workaround for arndale port
+                 * We will identify the interrupt number 0, which is
+                 * an unknown number.
+                 */
+                if (cpu) {
+                    if (irq == 0) {
+                        /* ignore injecting the guest */
+                        _guest_ops->end(irq);
+                        return;
+                    }
                 }
-            }
 #endif
-            /* IRQ INJECTION */
-            /* priority drop only for hanlding irq in guest */
-            /* guest_interrupt_end() */
-            _guest_ops->end(irq);
-            interrupt_inject_enabled_guest(NUM_GUESTS_STATIC, irq);
-        } else {
-            /* host irq */
-            if (irq < MAX_PPI_IRQS) {
-                if (_host_ppi_handlers[cpu][irq])
-                    _host_ppi_handlers[cpu][irq](irq, regs, 0);
+                /* IRQ INJECTION */
+                /* priority drop only for hanlding irq in guest */
+                /* guest_interrupt_end() */
+                _guest_ops->end(irq);
+                interrupt_inject_enabled_guest(NUM_GUESTS_STATIC, irq);
             } else {
-                if (_host_spi_handlers[irq])
-                    _host_spi_handlers[irq](irq, regs, 0);
+                /* host irq */
+                if (irq < MAX_PPI_IRQS) {
+                    if (_host_ppi_handlers[cpu][irq])
+                        _host_ppi_handlers[cpu][irq](irq, regs, 0);
+                } else {
+                    if (_host_spi_handlers[irq])
+                        _host_spi_handlers[irq](irq, regs, 0);
+                }
+                /* host_interrupt_end() */
+                _host_ops->end(irq);
             }
-            /* host_interrupt_end() */
-            _host_ops->end(irq);
-        }
     } else
         printh("interrupt:no pending irq:%x\n", irq);
 }
