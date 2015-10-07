@@ -3,7 +3,7 @@
 void core_gprs_init(struct core_gprs *regs){
 
     //Initialize loader status for reboot
-    regs->gprs[11] = 0;
+    regs->gprs[10] = 0;
 
     //Supervisor Mode
     regs->cpsr = 0x1d3;
@@ -40,131 +40,43 @@ void banked_regs_init(struct banked_regs *regs){
 }
 
 
-void core_gprs_save(struct core_gprs *regs){
+void core_gprs_save_(struct core_gprs *vcpu_regs, struct core_gprs *hw_regs){
+    /************************************
+    *   SAVE : HW_REGS => VCPU_REGS   
+    *        (source)  => (destination)
+    ************************************/
 
-//    regs->sp    = 
-//    regs->lr    = 
-//    regs->pc    = 
-//    regs->cpsr  = 
-
-
+    core_gprs_copy(vcpu_regs, hw_regs);
 }
+
+void core_gprs_restore_(struct core_gprs *vcpu_regs, struct core_gprs *hw_regs){
+    /************************************
+    *   RESTORE : VCPU_REGS => HW_REGS   
+    *             (source)  => (destination)
+    ************************************/
+    core_gprs_copy(hw_regs, vcpu_regs);
+   
+}
+
 void banked_regs_save(struct banked_regs *regs){
+    //READ regs from H/W
     banked_regs_save_hardware(regs);
 }
-void core_gprs_restore(struct core_gprs *regs){
-    
-}
+
 void banked_regs_restore(struct banked_regs *regs){
+    //WRITE regs to H/W
     banked_regs_restore_hardware(regs);
 }
-void banked_regs_save_hardware(struct banked_regs * regs)
-{
-    /* USR banked register : sp_usr is not banked in vcpu*/
-    //asm volatile(" mrs     %0, sp_usr\n\t"
-    //        : "=r"(regs_banked->sp_usr) : : "memory", "cc");
 
-    /* SVC banked register */
-    asm volatile(" mrs     %0, spsr_svc\n\t"
-            : "=r"(regs->svc_spsr) : : "memory", "cc");
-    asm volatile(" mrs     %0, sp_svc\n\t"
-            : "=r"(regs->svc_sp) : : "memory", "cc");
-    asm volatile(" mrs     %0, lr_svc\n\t"
-            : "=r"(regs->svc_lr) : : "memory", "cc");
-    /* ABT banked register */
-    asm volatile(" mrs     %0, spsr_abt\n\t"
-            : "=r"(regs->abt_spsr) : : "memory", "cc");
-    asm volatile(" mrs     %0, sp_abt\n\t"
-            : "=r"(regs->abt_sp) : : "memory", "cc");
-    asm volatile(" mrs     %0, lr_abt\n\t"
-            : "=r"(regs->abt_lr) : : "memory", "cc");
-    /* UND banked register */
-    asm volatile(" mrs     %0, spsr_und\n\t"
-            : "=r"(regs->und_spsr) : : "memory", "cc");
-    asm volatile(" mrs     %0, sp_und\n\t"
-            : "=r"(regs->und_sp) : : "memory", "cc");
-    asm volatile(" mrs     %0, lr_und\n\t"
-            : "=r"(regs->und_lr) : : "memory", "cc");
-    /* IRQ banked register */
-    asm volatile(" mrs     %0, spsr_irq\n\t"
-            : "=r"(regs->irq_spsr) : : "memory", "cc");
-    asm volatile(" mrs     %0, sp_irq\n\t"
-            : "=r"(regs->irq_sp) : : "memory", "cc");
-    asm volatile(" mrs     %0, lr_irq\n\t"
-            : "=r"(regs->irq_lr) : : "memory", "cc");
-    /* FIQ banked register  R8_fiq ~ R12_fiq, LR and SPSR */
-    asm volatile(" mrs     %0, spsr_fiq\n\t"
-            : "=r"(regs->fiq_spsr) : : "memory", "cc");
-    asm volatile(" mrs     %0, lr_fiq\n\t"
-            : "=r"(regs->fiq_lr) : : "memory", "cc");
-    asm volatile(" mrs     %0, r8_fiq\n\t"
-            : "=r"(regs->fiq_r8) : : "memory", "cc");
-    asm volatile(" mrs     %0, r9_fiq\n\t"
-            : "=r"(regs->fiq_r9) : : "memory", "cc");
-    asm volatile(" mrs     %0, r10_fiq\n\t"
-            : "=r"(regs->fiq_r10) : : "memory", "cc");
-    asm volatile(" mrs     %0, r11_fiq\n\t"
-            : "=r"(regs->fiq_r11) : : "memory", "cc");
-    asm volatile(" mrs     %0, r12_fiq\n\t"
-            : "=r"(regs->fiq_r12) : : "memory", "cc");
+void core_gprs_copy(struct core_gprs *dst_regs, struct core_gprs *src_regs){
+
+    int i = 0;
+
+    dst_regs->sp    = src_regs->sp;
+    dst_regs->lr    = src_regs->lr;
+    dst_regs->pc    = src_regs->pc;
+    dst_regs->cpsr  = src_regs->cpsr;
+
+    for(i = 0 ; i < NUM_OF_GPRS ; i++)
+        dst_regs->gprs[i] = src_regs->gprs[i];
 }
-
-
-void banked_regs_restore_hardware(struct banked_regs *regs)
-{
-    /* USR banked register : usr_sp is not banked register in vcpu */
-    //asm volatile(" msr    sp_usr, %0\n\t"
-    //        : : "r"(regs_banked->sp_usr) : "memory", "cc");
-    /* SVC banked register */
-    asm volatile(" msr    spsr_svc, %0\n\t"
-            : : "r"(regs->svc_spsr) : "memory", "cc");
-    asm volatile(" msr    sp_svc, %0\n\t"
-            : : "r"(regs->svc_sp) : "memory", "cc");
-    asm volatile(" msr    lr_svc, %0\n\t"
-            : : "r"(regs->svc_lr) : "memory", "cc");
-    /* ABT banked register */
-    asm volatile(" msr    spsr_abt, %0\n\t"
-            : : "r"(regs->abt_spsr) : "memory", "cc");
-    asm volatile(" msr    sp_abt, %0\n\t"
-            : : "r"(regs->abt_sp) : "memory", "cc");
-    asm volatile(" msr    lr_abt, %0\n\t"
-            : : "r"(regs->abt_lr) : "memory", "cc");
-    /* UND banked register */
-    asm volatile(" msr    spsr_und, %0\n\t"
-            : : "r"(regs->und_spsr) : "memory", "cc");
-    asm volatile(" msr    sp_und, %0\n\t"
-            : : "r"(regs->und_sp) : "memory", "cc");
-    asm volatile(" msr    lr_und, %0\n\t"
-            : : "r"(regs->und_lr) : "memory", "cc");
-    /* IRQ banked register */
-    asm volatile(" msr     spsr_irq, %0\n\t"
-            : : "r"(regs->irq_spsr) : "memory", "cc");
-    asm volatile(" msr     sp_irq, %0\n\t"
-            : : "r"(regs->irq_sp) : "memory", "cc");
-    asm volatile(" msr     lr_irq, %0\n\t"
-            : : "r"(regs->irq_lr) : "memory", "cc");
-    /* FIQ banked register */
-    asm volatile(" msr     spsr_fiq, %0\n\t"
-            : : "r"(regs->fiq_spsr) : "memory", "cc");
-    asm volatile(" msr     lr_fiq, %0\n\t"
-            : : "r"(regs->fiq_lr) : "memory", "cc");
-    asm volatile(" msr    r8_fiq, %0\n\t"
-            : : "r"(regs->fiq_r8) : "memory", "cc");
-    asm volatile(" msr    r9_fiq, %0\n\t"
-            : : "r"(regs->fiq_r9) : "memory", "cc");
-    asm volatile(" msr    r10_fiq, %0\n\t"
-            : : "r"(regs->fiq_r10) : "memory", "cc");
-    asm volatile(" msr    r11_fiq, %0\n\t"
-            : : "r"(regs->fiq_r11) : "memory", "cc");
-    asm volatile(" msr    r12_fiq, %0\n\t"
-            : : "r"(regs->fiq_r12) : "memory", "cc");
-}
-
-
-
-
-
-
-
-
-

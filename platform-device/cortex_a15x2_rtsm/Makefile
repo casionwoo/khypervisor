@@ -34,7 +34,9 @@ OBJS 		= boot.o	\
 	$(HYPERVISOR_SOURCE_DIR)/interrupt.o			\
 	$(HYPERVISOR_SOURCE_DIR)/vmcb.o					\
 	$(HYPERVISOR_SOURCE_DIR)/vcpu.o					\
+	$(HYPERVISOR_SOURCE_DIR)/vmcb_macro.o			\
 	$(HYPERVISOR_HW_DIR)/vcpu_regs.o				\
+	$(HYPERVISOR_HW_DIR)/vcpu_regs_hw.o				\
 	$(HYPERVISOR_HW_DIR)/guest_hw.o					\
 	$(HYPERVISOR_HW_DIR)/timer_hw.o					\
 	$(HYPERVISOR_HW_DIR)/interrupt_hw.o				\

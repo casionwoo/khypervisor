@@ -103,7 +103,8 @@ vmid_t sched_policy_determ_next(void);
  * to new virtual machine. Mainly, this function is called by trap and
  * the timer interrupt.
  */
-hvmm_status_t guest_perform_switch(struct arch_regs *regs);
+//hvmm_status_t guest_perform_switch(struct arch_regs *regs);
+hvmm_status_t guest_perform_switch(struct vcpu *vcpu);
 
 void guest_copy(struct guest_struct *dst, vmid_t vmid_src);
 void guest_dump_regs(struct arch_regs *regs);

@@ -3,6 +3,7 @@
 
 #include <k-hypervisor-config.h>
 #include <hvmm_types.h>
+#include <vcpu_regs_hw.h>
 
 #define NUM_OF_GPRS 13
 
@@ -53,10 +54,10 @@ struct banked_regs{
 void core_gprs_init(struct core_gprs *regs);
 void banked_regs_init(struct banked_regs *regs);
 
-void core_gprs_save(struct core_gprs *regs);
-void banked_regs_save(struct banked_regs *regs);
+void core_gprs_save_(struct core_gprs *vcpu_regs, struct core_gprs *hw_regs);
+void core_gprs_restore_(struct core_gprs *vcpu_regs, struct core_gprs *hw_regs);
 
-void core_gprs_restore(struct core_gprs *regs);
+void banked_regs_save(struct banked_regs *regs);
 void banked_regs_restore(struct banked_regs *regs);
 
 #endif      /* __VCPU_REGS_H__ */

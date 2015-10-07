@@ -22,8 +22,8 @@ struct guest_struct *_current_guest[NUM_CPUS];
 static uint8_t _switch_locked[NUM_CPUS];
 
 //=========start : vmbc & vcpu test variables for scheduling==================
-static vmcb_t vms[NUM_GUESTS_STATIC];
-static struct vcpu vcpus[NUM_GUESTS_STATIC];
+static vmcb_t *vmcbs_[NUM_GUESTS_STATIC];
+static struct vcpu *vcpus[NUM_GUESTS_STATIC];
 static int _current_vcpu_vmid[NUM_CPUS] = {VMID_INVALID, VMID_INVALID};
 static int _next_vcpu_vmid[NUM_CPUS] = {VMID_INVALID, };
 struct vcpu * _current_vcpu[NUM_CPUS];
@@ -86,7 +86,8 @@ static hvmm_status_t perform_switch(struct arch_regs *regs, vmid_t next_vmid)
     return result;
 }
 
-hvmm_status_t guest_perform_switch(struct arch_regs *regs)
+//hvmm_status_t guest_perform_switch(struct arch_regs *regs)
+hvmm_status_t guest_perform_switch(struct vcpu *vcpu)
 {
     hvmm_status_t result = HVMM_STATUS_IGNORED;
     uint32_t cpu = smp_processor_id();
@@ -98,15 +99,22 @@ hvmm_status_t guest_perform_switch(struct arch_regs *regs)
          */
         printh("context: launching the first guest\n");
 
-        result = perform_switch(0, _next_guest_vmid[cpu]);
+        //result = perform_switch(0, _next_guest_vmid[cpu]);
+        result = perform_switch(0, _next_vcpu_vmid[cpu]);
         /* DOES NOT COME BACK HERE */
-    } else if (_next_guest_vmid[cpu] != VMID_INVALID &&
-                _current_guest_vmid[cpu] != _next_guest_vmid[cpu]) {
-        printh("curr: %x\n", _current_guest_vmid[cpu]);
-        printh("next: %x\n", _next_guest_vmid[cpu]);
+    //} else if (_next_guest_vmid[cpu] != VMID_INVALID &&
+    } else if (_next_vcpu_vmid[cpu] != VMID_INVALID &&
+                _current_vcpu_vmid[cpu] != _next_vcpu_vmid[cpu]) {
+        //printh("curr: %x\n", _current_guest_vmid[cpu]);
+        printh("curr: %x\n", _current_vcpu_vmid[cpu]);
+        //printh("next: %x\n", _next_guest_vmid[cpu]);
+        printh("next: %x\n", _next_vcpu_vmid[cpu]);
         /* Only if not from Hyp */
-        result = perform_switch(regs, _next_guest_vmid[cpu]);
-        _next_guest_vmid[cpu] = VMID_INVALID;
+
+        //result = perform_switch(regs, _next_guest_vmid[cpu]);
+        result = perform_switch(regs, _next_vcpu_vmid[cpu]);
+        //_next_guest_vmid[cpu] = VMID_INVALID;
+        _next_vcpu_vmid[cpu] = VMID_INVALID;
     }
 
     _switch_locked[cpu] = 0;
@@ -117,21 +125,29 @@ hvmm_status_t guest_perform_switch(struct arch_regs *regs)
 void guest_sched_start(void)
 {
     struct guest_struct *guest = 0;
+    struct vcpu *vcpu = 0;
     uint32_t cpu = smp_processor_id();
 
     printh("[hyp] switch_to_initial_guest:\n");
     /* Select the first guest context to switch to. */
     _current_guest_vmid[cpu] = VMID_INVALID;
-    if (cpu)
+    _current_vcpu_vmid[cpu] = VMID_INVALID;
+    if (cpu){
         guest = &guests[num_of_guest(cpu - 1) + 0];
-    else
+        vcpu =  vcpus[num_of_guest(cpu - 1) + 0];
+    }
+    else{
         guest = &guests[0];
+        vcpu = vcpus[0];
+    }
     /* guest_hw_dump */
     if (_guest_module.ops->dump)
         _guest_module.ops->dump(GUEST_VERBOSE_LEVEL_0, &guest->regs);
     /* Context Switch with current context == none */
 
-    guest_switchto(guest->vmid, 0);
+    //guest_switchto(guest->vmid, 0);
+    guest_switchto(vcpu->id, 0);
+    //guest_perform_switch(&guest->regs);
     guest_perform_switch(&guest->regs);
 }
 
@@ -213,6 +229,8 @@ hvmm_status_t guest_switchto(vmid_t vmid, uint8_t locked)
     /* valid and not current vmid, switch */
     if (_switch_locked[cpu] == 0) {
         _next_guest_vmid[cpu] = vmid;
+        _next_vcpu_vmid[cpu] = vmid;
+
         result = HVMM_STATUS_SUCCESS;
         printh("switching to vmid: %x\n", (uint32_t)vmid);
     } else
@@ -272,12 +290,18 @@ void guest_schedule(void *pdata)
 
 }
 
-hvmm_status_t guest_init()
+hvmm_status_t guest_init(struct vmcb *vm0, struct vmcb *vm1)
 {
     struct timer_val timer;
     hvmm_status_t result = HVMM_STATUS_SUCCESS;
+
     struct guest_struct *guest;
+    struct vmcb *pvmcb;
+
     struct arch_regs *regs = 0;
+    struct vcpu * vcpu = 0;
+
+
     int i;
     int guest_count;
     int start_vmid = 0;
@@ -294,11 +318,24 @@ hvmm_status_t guest_init()
 
     guest_count += start_vmid;
 
+    vmcbs_[0] = vm0; 
+    vmcbs_[1] = vm1;
+
     for (i = start_vmid; i < guest_count; i++) {
         /* Guest i @guest_bin_start */
         guest = &guests[i];
+        pvmcb = vmcbs_[i];
+
         regs = &guest->regs;
+        vcpu = &(pvmcb->vcpus);
+
         guest->vmid = i;
+        pvmcb->id = i;
+
+        vmcb_init(pvmcb);
+
+        vcpus[i] = &(pvmcb->vcpus);
+
         /* guest_hw_init */
         if (_guest_module.ops->init)
             _guest_module.ops->init(guest, regs);

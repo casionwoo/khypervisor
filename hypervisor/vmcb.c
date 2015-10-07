@@ -16,6 +16,11 @@ void vmcb_init(vmcb_t *vm){
     vm->id = (num_of_vms++);
     vm->state = VMCB_INIT;
 
+    vm->vbar  = 0;
+    vm->ttbr0 = 0;
+    vm->ttbr1 = 0;
+    vm->ttbcr = 0;
+    vm->sctlr = 0;
     
     //Todo. 2 : Init the vcpu.    
     vcpu_init(&(vm->vcpus), vm->id);
@@ -33,7 +38,8 @@ void vmcb_init(vmcb_t *vm){
     vm->running_time = 0;
     vm->actual_running_time = 0;
 
-    vmcbs[vmcbs_number++] = vm;
+    VMCB_REGIST(vm); 
+    vmcb_start(vm->id);
 }
 
 void vmcb_delete(vmid_t vmid){
@@ -42,13 +48,8 @@ void vmcb_delete(vmid_t vmid){
 }
 
 void vmcb_start(vmid_t vmid){
-    int i = 0;
-    for(i = 0 ; i < vmcbs_number ; i++){
-        if(vmcbs[i]->id == vmid){
-            (vmcbs[i]->vcpus).state = VCPU_WAIT;
-            //Register vcpu to Scheduler with API.
-        }
-    }
+
+    //Register vcpu to Scheduler with API.
 }
 
 void vmcb_stop(vmid_t vmid){
@@ -67,6 +68,5 @@ void set_pmemmap(struct physical_memmap *memmap){
     memmap->mem_base = base;
     memmap->mem_offset = offset;
 }
-
 
 

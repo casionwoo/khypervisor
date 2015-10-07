@@ -314,7 +314,7 @@ int main_cpu_init()
 
     /* Initialize Guests */
     //Just Initialize everythings in vm struct which mean vcpu in my test.
-    if (guest_init())
+    if (guest_init(&vm0, &vm1))
         printh("[start_guest] guest initialization failed...\n");
 
     /* Initialize Virtual Devices */
@@ -358,3 +358,4 @@ int main(void)
 */
     return 0;
 }
+
