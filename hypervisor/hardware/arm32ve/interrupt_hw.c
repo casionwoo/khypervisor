@@ -3,8 +3,9 @@
 #include <vgic.h>
 #include <log/print.h>
 #include <log/uart_print.h>
+#include <guest.h>
 
-static struct vgic_status _vgic_status[NUM_GUESTS_STATIC];
+//static struct vgic_status _vgic_status[NUM_GUESTS_STATIC];
 
 static hvmm_status_t host_interrupt_init(void)
 {
@@ -90,12 +91,14 @@ static hvmm_status_t guest_interrupt_inject(vmid_t vmid, uint32_t virq,
 
 static hvmm_status_t guest_interrupt_save(vmid_t vmid)
 {
-    return vgic_save_status(&_vgic_status[vmid]);
+    //return vgic_save_status(&_vgic_status[vmid]);
+    return vgic_save_status(&(guests[vmid]._vgic_status));
 }
 
 static hvmm_status_t guest_interrupt_restore(vmid_t vmid)
 {
-    return vgic_restore_status(&_vgic_status[vmid], vmid);
+    //return vgic_restore_status(&_vgic_status[vmid], vmid);
+    return vgic_restore_status(&(guests[vmid]._vgic_status), vmid);
 }
 
 static hvmm_status_t guest_interrupt_dump(void)

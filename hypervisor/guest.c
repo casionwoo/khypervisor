@@ -13,12 +13,14 @@
 #define _valid_vmid(vmid) \
     (guest_first_vmid() <= vmid && guest_last_vmid() >= vmid)
 
-static struct guest_struct guests[NUM_GUESTS_STATIC];
 static int _current_guest_vmid[NUM_CPUS] = {VMID_INVALID, VMID_INVALID};
 static int _next_guest_vmid[NUM_CPUS] = {VMID_INVALID, };
 struct guest_struct *_current_guest[NUM_CPUS];
 /* further switch request will be ignored if set */
 static uint8_t _switch_locked[NUM_CPUS];
+
+
+
 
 static hvmm_status_t guest_save(struct guest_struct *guest,
                         struct arch_regs *regs)
@@ -53,10 +55,12 @@ static hvmm_status_t perform_switch(struct arch_regs *regs, vmid_t next_vmid)
     if (_current_guest_vmid[cpu] == next_vmid)
         return HVMM_STATUS_IGNORED; /* the same guest? */
 
-    guest_save(&guests[_current_guest_vmid[cpu]], regs);
-    memory_save();
-    interrupt_save(_current_guest_vmid[cpu]);
-    vdev_save(_current_guest_vmid[cpu]);
+//    guest_save(&guests[_current_guest_vmid[cpu]], regs);
+//    memory_save();
+//    interrupt_save(_current_guest_vmid[cpu]);
+//    vdev_save(_current_guest_vmid[cpu]);
+
+    guest_struct_save(regs);
 
     /* The context of the next guest */
     guest = &guests[next_vmid];
@@ -67,11 +71,11 @@ static hvmm_status_t perform_switch(struct arch_regs *regs, vmid_t next_vmid)
     if (_guest_module.ops->dump)
         _guest_module.ops->dump(GUEST_VERBOSE_LEVEL_3, &guest->regs);
 
-    vdev_restore(_current_guest_vmid[cpu]);
-
-    interrupt_restore(_current_guest_vmid[cpu]);
-    memory_restore(_current_guest_vmid[cpu]);
-    guest_restore(guest, regs);
+    guest_struct_restore(guest, regs);
+//    vdev_restore(_current_guest_vmid[cpu]);
+//    interrupt_restore(_current_guest_vmid[cpu]);
+//    memory_restore(_current_guest_vmid[cpu]);
+//    guest_restore(guest, regs);
 
     return result;
 }
@@ -150,7 +154,8 @@ vmid_t guest_last_vmid(void)
     else
         return 1;
 #endif
-    return cpu;
+//    return cpu;
+    return NUM_GUESTS_STATIC - 1;
 }
 
 vmid_t guest_next_vmid(vmid_t ofvmid)
@@ -325,4 +330,17 @@ void reboot_guest(vmid_t vmid, uint32_t pc,
     if (regs != 0)
         _guest_module.ops->restore(&guests[vmid], *regs);
 }
-
+void guest_struct_save(struct arch_regs *regs){
+    uint32_t cpu = smp_processor_id();
+    guest_save(&guests[_current_guest_vmid[cpu]], regs);
+    memory_save();
+    interrupt_save(_current_guest_vmid[cpu]);
+    vdev_save(_current_guest_vmid[cpu]);
+}
+void guest_struct_restore(struct guest_struct *guest, struct arch_regs *regs){
+    uint32_t cpu = smp_processor_id();
+    vdev_restore(_current_guest_vmid[cpu]);
+    interrupt_restore(_current_guest_vmid[cpu]);
+    memory_restore(_current_guest_vmid[cpu]);
+    guest_restore(guest, regs);
+}
