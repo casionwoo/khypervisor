@@ -1211,12 +1211,12 @@ static void guest_memory_init(struct memmap_desc **guest0_map,
     if (!cpu) {
         for (i = 0; i < NUM_GUESTS_STATIC; i++){
             //_vmid_ttbl[i] = &_ttbl_guest[i][0];
-            guests[i].ttbl= &_ttbl_guest[i][0];
+            vcpus[i].ttbl= &_ttbl_guest[i][0];
 
             if(i == 0)
-                guests[i].memmap_desc = guest0_map;
+                vcpus[i].memmap_desc = guest0_map;
             else if(i == 1)
-                guests[i].memmap_desc = guest1_map;
+                vcpus[i].memmap_desc = guest1_map;
         }
         guest_memory_init_ttbl(&_ttbl_guest[0][0], guest0_map);
         guest_memory_init_ttbl(&_ttbl_guest[1][0], guest1_map);
@@ -1324,7 +1324,7 @@ static hvmm_status_t memory_hw_restore(vmid_t vmid)
      * Enable Stage 2 Translation
      */
     //guest_memory_set_vmid_ttbl(vmid, _vmid_ttbl[vmid]);
-    guest_memory_set_vmid_ttbl(vmid, guests[vmid].ttbl);
+    guest_memory_set_vmid_ttbl(vmid, vcpus[vmid].ttbl);
 
     guest_memory_stage2_enable(1);
 

@@ -15,24 +15,24 @@
 
 static int _current_guest_vmid[NUM_CPUS] = {VMID_INVALID, VMID_INVALID};
 static int _next_guest_vmid[NUM_CPUS] = {VMID_INVALID, };
-struct guest_struct *_current_guest[NUM_CPUS];
+struct vcpu *_current_guest[NUM_CPUS];
 /* further switch request will be ignored if set */
 static uint8_t _switch_locked[NUM_CPUS];
 
 
 
 
-static hvmm_status_t guest_save(struct guest_struct *guest,
+static hvmm_status_t guest_save(struct vcpu *vcpu,
                         struct arch_regs *regs)
 {
     /* guest_hw_save : save the current guest's context*/
     if (_guest_module.ops->save)
-        return  _guest_module.ops->save(guest, regs);
+        return  _guest_module.ops->save(vcpu, regs);
 
     return HVMM_STATUS_UNKNOWN_ERROR;
 }
 
-static hvmm_status_t guest_restore(struct guest_struct *guest,
+static hvmm_status_t guest_restore(struct vcpu *guest,
                         struct arch_regs *regs)
 {
     /* guest_hw_restore : The next becomes the current */
@@ -50,7 +50,7 @@ static hvmm_status_t perform_switch(struct arch_regs *regs, vmid_t next_vmid)
     /* _curreng_guest_vmid -> next_vmid */
 
     hvmm_status_t result = HVMM_STATUS_UNKNOWN_ERROR;
-    struct guest_struct *guest = 0;
+    struct vcpu *guest = 0;
     uint32_t cpu = smp_processor_id();
     if (_current_guest_vmid[cpu] == next_vmid)
         return HVMM_STATUS_IGNORED; /* the same guest? */
@@ -63,7 +63,7 @@ static hvmm_status_t perform_switch(struct arch_regs *regs, vmid_t next_vmid)
     guest_struct_save(regs);
 
     /* The context of the next guest */
-    guest = &guests[next_vmid];
+    guest = &vcpus[next_vmid];
     _current_guest[cpu] = guest;
     _current_guest_vmid[cpu] = next_vmid;
 
@@ -110,16 +110,16 @@ hvmm_status_t guest_perform_switch(struct arch_regs *regs)
 /* Switch to the first guest */
 void guest_sched_start(void)
 {
-    struct guest_struct *guest = 0;
+    struct vcpu *guest = 0;
     uint32_t cpu = smp_processor_id();
 
     printh("[hyp] switch_to_initial_guest:\n");
     /* Select the first guest context to switch to. */
     _current_guest_vmid[cpu] = VMID_INVALID;
     if (cpu)
-        guest = &guests[num_of_guest(cpu - 1) + 0];
+        guest = &vcpus[num_of_guest(cpu - 1) + 0];
     else
-        guest = &guests[0];
+        guest = &vcpus[0];
     /* guest_hw_dump */
     if (_guest_module.ops->dump)
         _guest_module.ops->dump(GUEST_VERBOSE_LEVEL_0, &guest->regs);
@@ -269,7 +269,7 @@ hvmm_status_t guest_init()
 {
     struct timer_val timer;
     hvmm_status_t result = HVMM_STATUS_SUCCESS;
-    struct guest_struct *guest;
+    struct vcpu *guest;
     struct arch_regs *regs = 0;
     int i;
     int guest_count;
@@ -289,7 +289,7 @@ hvmm_status_t guest_init()
 
     for (i = start_vmid; i < guest_count; i++) {
         /* Guest i @guest_bin_start */
-        guest = &guests[i];
+        guest = &vcpus[i];
         regs = &guest->regs;
         guest->vmid = i;
         /* guest_hw_init */
@@ -311,33 +311,33 @@ hvmm_status_t guest_init()
     return result;
 }
 
-struct guest_struct get_guest(uint32_t guest_num)
+struct vcpu get_guest(uint32_t guest_num)
 {
-   return guests[guest_num];
+   return vcpus[guest_num];
 }
 
-void guest_copy(struct guest_struct *dst, vmid_t vmid_src)
+void guest_copy(struct vcpu *dst, vmid_t vmid_src)
 {
-    _guest_module.ops->move(dst, &(guests[vmid_src]));
+    _guest_module.ops->move(dst, &(vcpus[vmid_src]));
 }
 
 void reboot_guest(vmid_t vmid, uint32_t pc,
         struct arch_regs **regs)
 {
-    _guest_module.ops->init(&guests[vmid], &(guests[vmid].regs));
-    guests[vmid].regs.pc = pc;
-    guests[vmid].regs.gpr[10] = 1;
+    _guest_module.ops->init(&vcpus[vmid], &(vcpus[vmid].regs));
+    vcpus[vmid].regs.pc = pc;
+    vcpus[vmid].regs.gpr[10] = 1;
     if (regs != 0)
-        _guest_module.ops->restore(&guests[vmid], *regs);
+        _guest_module.ops->restore(&vcpus[vmid], *regs);
 }
 void guest_struct_save(struct arch_regs *regs){
     uint32_t cpu = smp_processor_id();
-    guest_save(&guests[_current_guest_vmid[cpu]], regs);
+    guest_save(&vcpus[_current_guest_vmid[cpu]], regs);
     memory_save();
     interrupt_save(_current_guest_vmid[cpu]);
     vdev_save(_current_guest_vmid[cpu]);
 }
-void guest_struct_restore(struct guest_struct *guest, struct arch_regs *regs){
+void guest_struct_restore(struct vcpu *guest, struct arch_regs *regs){
     uint32_t cpu = smp_processor_id();
     vdev_restore(_current_guest_vmid[cpu]);
     interrupt_restore(_current_guest_vmid[cpu]);

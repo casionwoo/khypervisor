@@ -92,13 +92,13 @@ static hvmm_status_t guest_interrupt_inject(vmid_t vmid, uint32_t virq,
 static hvmm_status_t guest_interrupt_save(vmid_t vmid)
 {
     //return vgic_save_status(&_vgic_status[vmid]);
-    return vgic_save_status(&(guests[vmid]._vgic_status));
+    return vgic_save_status(&(vcpus[vmid]._vgic_status));
 }
 
 static hvmm_status_t guest_interrupt_restore(vmid_t vmid)
 {
     //return vgic_restore_status(&_vgic_status[vmid], vmid);
-    return vgic_restore_status(&(guests[vmid]._vgic_status), vmid);
+    return vgic_restore_status(&(vcpus[vmid]._vgic_status), vmid);
 }
 
 static hvmm_status_t guest_interrupt_dump(void)
